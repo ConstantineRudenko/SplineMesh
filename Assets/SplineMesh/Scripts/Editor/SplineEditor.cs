@@ -14,6 +14,7 @@ namespace SplineMesh {
         private Color DIRECTION_BUTTON_COLOR = Color.red;
         private Color UP_BUTTON_COLOR = Color.green;
 
+        private static bool LockSelectionToSpline = false;
         private static bool showUpVector = false;
 
         private enum SelectionType {
@@ -23,11 +24,11 @@ namespace SplineMesh {
             Up
         }
 
-        private SplineNode selection;
-        private SelectionType selectionType;
-        private bool mustCreateNewNode = false;
+        private static SplineNode selection;
+        private static SelectionType selectionType;
+        private static bool mustCreateNewNode = false;
         private SerializedProperty nodesProp;
-        private Spline spline;
+        private static Spline spline;
 
         private GUIStyle nodeButtonStyle, directionButtonStyle, upButtonStyle;
 
@@ -81,7 +82,7 @@ namespace SplineMesh {
 
             // disable game object transform gyzmo
             if (Selection.activeGameObject == spline.gameObject) {
-                Tools.current = Tool.None;
+                // Tools.current = Tool.None;
                 if (selection == null && spline.nodes.Count > 0)
                     selection = spline.nodes[0];
             }
@@ -187,6 +188,12 @@ namespace SplineMesh {
                 }
             }
             Handles.EndGUI();
+            // Don't allow clicking over empty space to deselect the object
+            if(LockSelectionToSpline==true){
+                if (e.type == EventType.Layout) {
+                    HandleUtility.AddDefaultControl (0);
+                }
+            }
 
             if (GUI.changed)
                 EditorUtility.SetDirty(target);
@@ -229,6 +236,7 @@ namespace SplineMesh {
             }
             GUI.enabled = true;
 
+            LockSelectionToSpline = GUILayout.Toggle(LockSelectionToSpline, "Lock Selection To Spline");
             showUpVector = GUILayout.Toggle(showUpVector, "Show up vector");
             spline.IsLoop = GUILayout.Toggle(spline.IsLoop, "Is loop (experimental)");
 
