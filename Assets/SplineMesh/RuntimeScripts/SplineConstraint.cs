@@ -7,17 +7,19 @@ using UnityEditor;
 #endif
 
 [ExecuteInEditMode]
+[SelectionBase]
+[DisallowMultipleComponent]
 public class SplineConstraint : MonoBehaviour {
 		public enum PositionalMode{
 			Speed,
 			Normalized
 		}
 
-        public Spline spline;
+        public Spline m_Spline;
         private float rate = 0;
 		public PositionalMode Mode = PositionalMode.Speed;
       	[HideInInspector] public float Speed = 0.0f;
-		[HideInInspector] public float NormalizedValue = 0.0f;
+		[HideInInspector] public float m_NormalizedPosition = 0.0f;
 	// Use this for initialization
         void OnEnable() {
             rate = 0;
@@ -39,23 +41,22 @@ public class SplineConstraint : MonoBehaviour {
 			#endif
 				ConstraintUpdate();
 			}
-
 		}
 	
         void ConstraintUpdate() {
-			if(spline != null){
+			if(m_Spline != null){
 				switch(Mode){
 					case PositionalMode.Speed:
 						rate += Speed*Time.deltaTime;
 					break;
 					case PositionalMode.Normalized:
-						rate = NormalizedValue * (spline.nodes.Count-1);
+						rate = m_NormalizedPosition * (m_Spline.nodes.Count-1);
 					break;
 
 				}
 
-				if (rate > spline.nodes.Count - 1){
-					rate -= spline.nodes.Count - 1;
+				if (rate > m_Spline.nodes.Count - 1){
+					rate -= m_Spline.nodes.Count - 1;
 				}
 				PlaceFollower();
 			}
@@ -63,8 +64,8 @@ public class SplineConstraint : MonoBehaviour {
         }
 
 		private void PlaceFollower() {
-            if (spline != null) {
-                CurveSample sample = spline.GetSample(rate);
+            if (m_Spline != null) {
+                CurveSample sample = m_Spline.GetSample(rate);
                 transform.localPosition = sample.location;
                 transform.localRotation = sample.Rotation;
             }
@@ -80,7 +81,7 @@ public class SplineConstraintEditor : Editor{
 		if(t.Mode == SplineConstraint.PositionalMode.Speed){
 			t.Speed = EditorGUILayout.FloatField("Speed",t.Speed);
 		}else if(t.Mode == SplineConstraint.PositionalMode.Normalized){
-			t.NormalizedValue = EditorGUILayout.Slider("Normalized Value",t.NormalizedValue,0.0f,1.0f);
+			t.m_NormalizedPosition = EditorGUILayout.Slider("Normalized Position",t.m_NormalizedPosition,0.0f,1.0f);
 		}
 
 	}

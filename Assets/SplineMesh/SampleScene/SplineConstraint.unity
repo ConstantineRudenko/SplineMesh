@@ -141,18 +141,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0e97806093922c9428b66b68faf05f3f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  spline: {fileID: 972885984}
-  Mode: 0
+  m_Spline: {fileID: 972885984}
+  Mode: 1
   Speed: 0.2
-  NormalizedValue: 0.94
+  m_NormalizedPosition: 0
 --- !u!4 &544720518
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 544720516}
-  m_LocalRotation: {x: -0.038363647, y: 0.07340431, z: 0.0028257773, w: 0.99656016}
-  m_LocalPosition: {x: 12.600762, y: 0.040693898, z: 11.115237}
+  m_LocalRotation: {x: 0.15811747, y: 0.8277371, z: 0.2875507, w: -0.45515355}
+  m_LocalPosition: {x: 4.9645505, y: 8.479646, z: 12.904862}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
   - {fileID: 1804524449}
