@@ -7,20 +7,19 @@ namespace SplineMesh {
     [CustomEditor(typeof(Spline))]
     public class SplineEditor : Editor {
 
-        private const int QUAD_SIZE = 12;
+        private const int QUAD_SIZE = 30;
         private Color CURVE_COLOR = new Color(0.8f, 0.8f, 0.8f);
         private Color CURVE_BUTTON_COLOR = new Color(0.8f, 0.8f, 0.8f);
-        private Color DIRECTION_COLOR = Color.red;
-        private Color DIRECTION_BUTTON_COLOR = Color.red;
-        private Color UP_BUTTON_COLOR = Color.green;
+        //private Color DIRECTION_COLOR = Color.red;
+        //private Color DIRECTION_BUTTON_COLOR = Color.red;
+        //private Color UP_BUTTON_COLOR = Color.green;
 
-        private static bool LockSelectionToSpline = false;
-        private static bool showUpVector = false;
+        private static bool LockSelectionToSpline = true;
+        private static bool showUpVector = true;
 
-        private enum SelectionType {
+        private enum SelectionType
+        {
             Node,
-            Direction,
-            InverseDirection,
             Up
         }
 
@@ -32,27 +31,33 @@ namespace SplineMesh {
 
         private GUIStyle nodeButtonStyle, directionButtonStyle, upButtonStyle;
 
+        //Custom Handles 
+        public Texture2D HandlesTexture;
+        public Event e { get { return Event.current; } }
+        public float distance { get;private set;}
+        public int controlID { get; private set;}
+        public Color color;
+        public Color hoveredColor;
+        public Color selectedColor;
+        public bool faceCamera = true;
+
+
         private void OnEnable() {
             spline = (Spline)target;
             nodesProp = serializedObject.FindProperty("nodes");
 
-            Texture2D t = new Texture2D(1, 1);
-            t.SetPixel(0, 0, CURVE_BUTTON_COLOR);
-            t.Apply();
+            //Texture2D t = EditorGUIUtility.whiteTexture;
+            Texture2D t = HandlesTexture;
+
             nodeButtonStyle = new GUIStyle();
             nodeButtonStyle.normal.background = t;
 
-            t = new Texture2D(1, 1);
-            t.SetPixel(0, 0, DIRECTION_BUTTON_COLOR);
-            t.Apply();
+
             directionButtonStyle = new GUIStyle();
             directionButtonStyle.normal.background = t;
 
-            t = new Texture2D(1, 1);
-            t.SetPixel(0, 0, UP_BUTTON_COLOR);
-            t.Apply();
             upButtonStyle = new GUIStyle();
-            upButtonStyle.normal.background = t;
+            //upButtonStyle.normal.background = t;
             selection = null;
         }
 
@@ -68,7 +73,7 @@ namespace SplineMesh {
         }
 
         void OnSceneGUI() {
-            Event e = Event.current;
+
             if (e.type == EventType.MouseDown) {
                 Undo.RegisterCompleteObjectUndo(spline, "change spline topography");
                 // if alt key pressed, we will have to create a new node if node position is changed
@@ -82,7 +87,7 @@ namespace SplineMesh {
 
             // disable game object transform gyzmo
             if (Selection.activeGameObject == spline.gameObject) {
-                // Tools.current = Tool.None;
+                //Tools.current = Tool.None;
                 if (selection == null && spline.nodes.Count > 0)
                     selection = spline.nodes[0];
             }
@@ -99,35 +104,69 @@ namespace SplineMesh {
             }
 
             // draw the selection handles
-            switch (selectionType) {
-                case SelectionType.Node:
-                    // place a handle on the node and manage position change
-                    Vector3 newPosition = spline.transform.InverseTransformPoint(Handles.PositionHandle(spline.transform.TransformPoint(selection.Position), Quaternion.identity));
-                    if (newPosition != selection.Position) {
-                        // position handle has been moved
-                        if (mustCreateNewNode) {
-                            mustCreateNewNode = false;
-                            selection = AddClonedNode(selection);
-                            selection.Direction += newPosition - selection.Position;
-                            selection.Position = newPosition;
-                        } else {
-                            selection.Direction += newPosition - selection.Position;
-                            selection.Position = newPosition;
-                        }
+            // place a handle on the node and manage position change       
+            float HandleSizeMult = 0.2f;
+            var HandlePos = spline.transform.TransformPoint(selection.Position);
+            var HandleSize = HandleUtility.GetHandleSize(HandlePos) * HandleSizeMult;
+            Color defaultColor = Handles.color;
+            Vector3 sceneCamPos = SceneView.currentDrawingSceneView.camera.transform.position;
+            Vector3 newPosition;
+            Vector3 discNormal = sceneCamPos - spline.transform.TransformPoint(selection.Position);
+            if (selectionType==SelectionType.Node)
+            {
+                newPosition = Handles.PositionHandle(HandlePos, Quaternion.identity);
+                if (newPosition != selection.Position)
+                {
+                    // position handle has been moved
+                    if (mustCreateNewNode)
+                    {
+                        mustCreateNewNode = false;
+                        selection = AddClonedNode(selection);
+                        selection.Direction += newPosition - selection.Position;
+                        selection.Position = newPosition;
                     }
-                    break;
-                case SelectionType.Direction:
-                    var result = Handles.PositionHandle(spline.transform.TransformPoint(selection.Direction), Quaternion.identity);
-                    selection.Direction = spline.transform.InverseTransformPoint(result);
-                    break;
-                case SelectionType.InverseDirection:
-                    result = Handles.PositionHandle(2 * spline.transform.TransformPoint(selection.Position) - spline.transform.TransformPoint(selection.Direction), Quaternion.identity);
-                    selection.Direction = 2 * selection.Position - spline.transform.InverseTransformPoint(result);
-                    break;
-                case SelectionType.Up:
-                    result = Handles.PositionHandle(spline.transform.TransformPoint(selection.Position + selection.Up), Quaternion.LookRotation(selection.Direction - selection.Position));
-                    selection.Up = (spline.transform.InverseTransformPoint(result) - selection.Position).normalized;
-                    break;
+                    else
+                    {
+                        selection.Direction += newPosition - selection.Position;
+                        selection.Position = newPosition;
+                    }
+                }
+            }
+
+            Handles.color = new Color(1.0f, .65f, .26f, 1.0f);
+            HandlePos = spline.transform.TransformPoint(selection.Direction);
+            HandleSize = HandleUtility.GetHandleSize(HandlePos) * HandleSizeMult;
+            var Dirresult = Handles.FreeMoveHandle(HandlePos, Quaternion.identity, HandleSize,Vector3.zero,Handles.RectangleHandleCap);
+            if (e.type == EventType.Repaint)
+            {
+                Handles.DrawSolidDisc(HandlePos, discNormal, HandleSize);
+            }
+            selection.Direction = spline.transform.InverseTransformPoint(Dirresult);
+
+            HandlePos = 2 * spline.transform.TransformPoint(selection.Position) - spline.transform.TransformPoint(selection.Direction);
+            HandleSize = HandleUtility.GetHandleSize(HandlePos)* HandleSizeMult;
+            var Invresult = Handles.FreeMoveHandle(HandlePos, Quaternion.identity, HandleSize, Vector3.zero, Handles.RectangleHandleCap);
+            if (e.type == EventType.Repaint)
+            {
+                Handles.DrawSolidDisc(HandlePos, discNormal, HandleSize);
+            }
+            selection.Direction = 2 * selection.Position - spline.transform.InverseTransformPoint(Invresult);
+
+            if (showUpVector)
+            {
+                Handles.color = new Color(0.15f,0.87f,0.24f,1f);
+                HandlePos = spline.transform.TransformPoint(selection.Position + selection.Up);
+                HandleSize = HandleUtility.GetHandleSize(HandlePos) * HandleSizeMult;
+                if (e.type == EventType.Repaint)
+                {
+                    Handles.DrawSolidDisc(HandlePos, discNormal, HandleSize);
+                }
+                if (selectionType == SelectionType.Up)
+                {
+                    var Upresult = Handles.FreeMoveHandle(HandlePos, Quaternion.LookRotation(selection.Direction - selection.Position), HandleSize, Vector3.zero, Handles.RectangleHandleCap);
+                    selection.Up = (spline.transform.InverseTransformPoint(Upresult) - selection.Position).normalized;
+                }
+
             }
 
             // draw the handles of all nodes, and manage selection motion
@@ -137,6 +176,7 @@ namespace SplineMesh {
                 var pos = spline.transform.TransformPoint(n.Position);
                 var invDir = spline.transform.TransformPoint(2 * n.Position - n.Direction);
                 var up = spline.transform.TransformPoint(n.Position + n.Up);
+                
                 // first we check if at least one thing is in the camera field of view
                 if (!(CameraUtility.IsOnScreen(pos) ||
                     CameraUtility.IsOnScreen(dir) ||
@@ -146,48 +186,57 @@ namespace SplineMesh {
                 }
 
                 Vector3 guiPos = HandleUtility.WorldToGUIPoint(pos);
-                if (n == selection) {
+                //HandleSize = HandleUtility.GetHandleSize(guiPos) ;
+                //discNormal = sceneCamPos - pos;
+
+                //if (e.type == EventType.Repaint)
+                //{
+                //    Handles.color = new Color(0.04f, .54f, .93f, 1f);
+                //    Handles.DrawSolidDisc(guiPos, discNormal, HandleSize);
+                //}
+
+                Color defaultCol = GUI.color;
+                if (n == selection)
+                {
+
                     Vector3 guiDir = HandleUtility.WorldToGUIPoint(dir);
                     Vector3 guiInvDir = HandleUtility.WorldToGUIPoint(invDir);
                     Vector3 guiUp = HandleUtility.WorldToGUIPoint(up);
 
                     // for the selected node, we also draw a line and place two buttons for directions
                     Handles.color = Color.red;
-                    Handles.DrawLine(guiDir, guiInvDir);
+                    //Handles.DrawLine(guiDir, guiInvDir);
+                    Handles.DrawBezier(
+                        guiDir,guiInvDir,
+                        guiDir, guiInvDir,
+                        Color.red,null,3
+                        );
 
-                    // draw quads direction and inverse direction if they are not selected
-                    if (selectionType != SelectionType.Node) {
-                        if (Button(guiPos, directionButtonStyle)) {
-                            selectionType = SelectionType.Node;
-                        }
-                    }
-                    if (selectionType != SelectionType.Direction) {
-                        if (Button(guiDir, directionButtonStyle)) {
-                            selectionType = SelectionType.Direction;
-                        }
-                    }
-                    if (selectionType != SelectionType.InverseDirection) {
-                        if (Button(guiInvDir, directionButtonStyle)) {
-                            selectionType = SelectionType.InverseDirection;
-                        }
-                    }
-                    if (showUpVector) {
+
+                    if (showUpVector)
+                    {
                         Handles.color = Color.green;
                         Handles.DrawLine(guiPos, guiUp);
-                        if (selectionType != SelectionType.Up) {
-                            if (Button(guiUp, upButtonStyle)) {
+                        if (selectionType != SelectionType.Up)
+                        {
+                            if (Button(guiUp, upButtonStyle))
+                            {
                                 selectionType = SelectionType.Up;
                             }
                         }
                     }
-                } else {
-                    if (Button(guiPos, nodeButtonStyle)) {
-                        selection = n;
-                        selectionType = SelectionType.Node;
-                    }
                 }
+
+                GUI.color = CURVE_BUTTON_COLOR;
+                if (Button(guiPos, nodeButtonStyle))
+                {
+                    selection = n;
+                    selectionType = SelectionType.Node;
+                }
+
             }
             Handles.EndGUI();
+
             // Don't allow clicking over empty space to deselect the object
             if(LockSelectionToSpline==true){
                 if (e.type == EventType.Layout) {

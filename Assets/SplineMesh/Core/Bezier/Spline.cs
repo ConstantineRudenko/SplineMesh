@@ -61,8 +61,8 @@ namespace SplineMesh {
         private void Reset() {
             nodes.Clear();
             curves.Clear();
-            AddNode(new SplineNode(new Vector3(5, 0, 0), new Vector3(5, 0, -3)));
-            AddNode(new SplineNode(new Vector3(10, 0, 0), new Vector3(10, 0, 3)));
+            AddNode(new SplineNode(new Vector3(-1, 0, 0), new Vector3(-1, 0, -1)));
+            AddNode(new SplineNode(new Vector3(1, 0, 0), new Vector3(1, 0, 1)));
             RaiseNodeListChanged(new ListChangedEventArgs<SplineNode>() {
                 type = ListChangeType.clear
             });
