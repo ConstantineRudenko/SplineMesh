@@ -13,6 +13,7 @@ namespace SplineMesh {
     /// The spline and the nodes raise events each time something is changed.
     /// </summary>
     [DisallowMultipleComponent]
+    // [SelectionBase]
     [ExecuteInEditMode]
     public class Spline : MonoBehaviour {
         /// <summary>

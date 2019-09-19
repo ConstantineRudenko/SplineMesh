@@ -7,7 +7,7 @@ using UnityEditor;
 #endif
 
 [ExecuteInEditMode]
-[SelectionBase]
+// [SelectionBase]
 [DisallowMultipleComponent]
 public class SplineConstraint : MonoBehaviour {
 		public enum PositionalMode{
